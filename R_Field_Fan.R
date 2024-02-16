@@ -6,15 +6,15 @@ p_load(tidyverse,here,extrafont, ggpubr, effsize,scales,Metrics)
 
 ########
 ##spreadsheets  Q2
-Q2 <- read.csv(here("datasets","Q2.xlsx")) #responses questionnaire Q2
+Q2 <- read_rds(here("datasets","Q2.rds")) #responses questionnaire Q2
 ##Outdoor conditions - weather station INMET 806
-Out <- read_delim("C:/Users/mafo0648/OneDrive - The University of Sydney (Staff)/Documents/campo2022/medicao/dados_A806_H_2022-01-01_2022-02-19_inmet.csv", 
+Out <- read_delim(here("datasets","OUT_A806_H_2022-01-01_2022-02-19_inmet.csv"), 
                   skip = 10, delim = ";")%>%select(`Data Medicao`,`Hora Medicao`,`TEMPERATURA DO AR - BULBO SECO, HORARIA(°C)`,`UMIDADE RELATIVA DO AR, HORARIA(%)`)%>%
   rename(day=`Data Medicao`,time=`Hora Medicao`,Text=`TEMPERATURA DO AR - BULBO SECO, HORARIA(°C)`,RHext=`UMIDADE RELATIVA DO AR, HORARIA(%)`)%>%
   mutate(time=as.numeric(time)/100)%>%
   mutate(day_time=as.POSIXct(paste0(day,"",time,":00:00"),format="%Y-%m-%d %H:%M:%S"))
 ##measured indoor conditions
-Indoor <- read_delim()
+Indoor <- read_rds(here("datasets","Indoor.rds"))
 
 
 ### Process Q2 
@@ -106,13 +106,13 @@ Indoor%>%
 ### graphs ###
 
   ###  Fig 2 - Temp indoor vs setpoint by period ### 
-ggsave(file="C:/Users/mafo0648/OneDrive - The University of Sydney (Staff)/Documents/campo2022/final/Tar_setpoint.svg",
-       Indoor%>%
+ Indoor%>%
          mutate(hour=as.numeric(format(day_time,"%H")),day_factor=format(day_time,"%m/%d"))%>%
          filter(between(hour,8,18), day_factor %in% c(unique(format(Q2$day,"%m/%d"))))%>%
-         left_join(Q2%>%
-                     mutate(day_factor=format(Q2$day_time.x,"%m/%d"))%>%
-                     select(day_factor,setpoint,period))%>%
+         mutate(period=ifelse(hour<13,"M","T"))%>%
+   left_join(Q2%>%
+               group_by(day_factor,period)%>%
+             summarise(setpoint=mean(setpoint)))%>%
          ggplot( aes(Tar, fill=period,as.factor(setpoint)))+
          geom_boxplot(varwidth = TRUE,outlier.shape = NA)+labs(x="Air temperature (ºC)", y="Setpoint temperature (ºC)\n")+
          scale_fill_discrete(labels=c("Morning","Afternoon"), "")+
@@ -122,20 +122,15 @@ ggsave(file="C:/Users/mafo0648/OneDrive - The University of Sydney (Staff)/Docum
          annotate("text", x=24.95, y = "26", hjust = -0.2, label="Median", angle=90, size=4.3, family="sans")+
          theme_pubclean(base_family = "sans")+
          theme( legend.key = element_rect(colour = NA, fill = NA),text=element_text(size=14),legend.text = element_text(size=12),axis.title = element_text(size=12),
-                legend.position = c(0.8, 0.15),legend.direction = "horizontal"), 
-       width=8, height=3.5)
-
-    ## median indoor air temp = 25.1°C
+                legend.position = c(0.8, 0.15),legend.direction = "horizontal")
+ 
+    ## median indoor air temp = 25.0°C
 Indoor%>%
   mutate(hour=as.numeric(format(day_time,"%H")),day_factor=format(day_time,"%m/%d"))%>%
   filter(between(hour,8,18), day_factor %in% c(unique(format(Q2$day,"%m/%d"))))%>%
-  left_join(Q2%>%
-              mutate(day_factor=format(Q2$day_time.x,"%m/%d"))%>%
-              select(day_factor,setpoint,period))%>%
   summarise(median(Tar))
 
 ### Fig 3 - Temp & RH indoor vs outdoor  ###
-ggsave(file="C:/Users/mafo0648/OneDrive - The University of Sydney (Staff)/Documents/campo2022/final/Out_Indoor.svg",
        ggarrange(
              Indoor %>%
                mutate(hour=as.numeric(format(day_time,"%H")))%>%
@@ -189,12 +184,11 @@ ggsave(file="C:/Users/mafo0648/OneDrive - The University of Sydney (Staff)/Docum
            scale_color_manual(values = c("#4477AA", "#66CCEE","#CCBB44","#EE6677", "#AA3377"))+
            labs(x="Outdoor relative humidity (%)",y="Indoor relative humidity (%)", col="",subtitle = "b)")+
            scale_y_continuous(limits = c(45,80))+scale_x_continuous(breaks = seq(min(40), max(90), by = 20))+coord_fixed(ratio = 1),
-         ncol=2, nrow=1,  widths = c(2.2222,1), heights = c(1,1),common.legend = TRUE, legend = "bottom"), width = 8, height=3)
+         ncol=2, nrow=1,  widths = c(2.2222,1), heights = c(1,1),common.legend = TRUE, legend = "bottom")
 
 
 ###  Fig 4 - COMFORT & PREFERENCE      
-ggsave(file="C:/Users/mafo0648/OneDrive - The University of Sydney (Staff)/Documents/campo2022/final/Comf-pref.svg",
-       ggarrange (   
+ggarrange (   
          Q2%>%
            filter(!Tar_bin %in% c("22-23","26-27","27-28"))%>%
            group_by(Prepost,Tar_bin)%>%
@@ -260,7 +254,7 @@ ggsave(file="C:/Users/mafo0648/OneDrive - The University of Sydney (Staff)/Docum
                  panel.grid.major.x = element_line(color = "grey",linetype = 3),panel.grid.major.y = element_blank())+guides(fill=guide_legend(nrow=2,byrow=TRUE))+
            stat_summary(fun=mean, colour="black", geom="point", show.legend = FALSE)+  
            stat_summary(vjust=-2.5, aes( label=round(..x.., digits=1)),fun=mean, colour="black", geom="text", show.legend = FALSE),
-         ncol=2, nrow=2, align="hv", heights = c(0.88,1), widths = c(1,0.7)), width = 8, height = 6)
+         ncol=2, nrow=2, align="hv", heights = c(0.88,1), widths = c(1,0.7))
   
 ## preferred and comfable temperature intervals
 Q2%>%
@@ -281,12 +275,10 @@ t.test(Q2$Tar[Q2$Comf01==0 & Q2$Prepost==0],Q2$Tar[Q2$Comf01==0 & Q2$Prepost==1]
 
 
 ###  Fig 5 - daily comfort & temperatures ###
-ggsave(file="C:/Users/mafo0648/OneDrive - The University of Sydney (Staff)/Documents/campo2022/final/Comf_daily.svg",
        ggarrange (
          Q2 %>%
-           mutate(day_factor=as.factor(format(day,"%m/%d"))) %>%
            mutate(comf=ifelse(COMFORT==2,"4",ifelse(COMFORT==1,"4",ifelse(COMFORT==-1,"2", "1"))))%>%
-           ggplot(aes(day_factor,fill=as.factor(conf)))+
+           ggplot(aes(day_factor,fill=as.factor(comf)))+
            scale_fill_manual(breaks = c("4","2","1"),values = c("#AAD37B","#FFB2A5","#FD5F5F"),labels = c("Comfortable", "Just uncomfortable", "Very uncomfortable"))+
            scale_y_continuous(labels = percent_format(suffix = ""),expand = c(0,0))+
            geom_bar(position="fill")+
@@ -299,7 +291,6 @@ ggsave(file="C:/Users/mafo0648/OneDrive - The University of Sydney (Staff)/Docum
            filter(between(hour,8,18), day_factor %in% c(unique(format(Q2$day,"%m/%d"))))%>%
            select(day_factor,Tar)%>%
            left_join(Q2%>%
-                       mutate(day_factor=as.factor(format(day,"%m/%d"))) %>%
                        group_by(day_factor)%>%
                        summarise(SetpointM=mean(setpoint[period=="M"]), SetpointT=mean(setpoint[period=="T"]),Prepost=mean(Prepost))%>%
                        mutate(Prepost=ifelse(Prepost>0,1,0))%>%
@@ -311,9 +302,6 @@ ggsave(file="C:/Users/mafo0648/OneDrive - The University of Sydney (Staff)/Docum
            geom_boxplot(aes(y=Tar, fill=as.factor(Prepost),group=day_factor),outlier.shape = NA)+
            stat_summary(aes(y=Tar, group=day_factor),fun=mean, colour="black", geom="point", show.legend = FALSE)+
            stat_summary(aes(y=TextM, group=2),fun=mean, geom="line", lty="dashed")+
-           #stat_summary(aes(y=X7, group=2),fun=mean, geom="line", lty="dashed")+ #RH
-           #stat_summary(aes(y=TextM, group=2),fun=mean, geom="point")+ #Text
-           #annotate("text", x="02/15", y = 28.5,hjust = 0.3, label=expression('T'['out']),  size=4.3, family="sans")+
            annotate("text", x="01/10", y = 28.5, hjust = 0.2, label="Pre-int.",  size=4.3, family="sans")+
            stat_summary(aes(y=as.numeric(SetpointM), group=1),fun=mean, geom="point", shape=6)+
            stat_summary(aes(y=as.numeric(SetpointT), group=1),fun=mean, geom="point", shape=6)+
@@ -323,8 +311,7 @@ ggsave(file="C:/Users/mafo0648/OneDrive - The University of Sydney (Staff)/Docum
            theme(strip.background = element_rect(fill=NA, color = NA), text=element_text(size=14),strip.text.x = element_text(face="bold", size=12),
                  axis.title = element_text(size=12), legend.text = element_text(size=12),legend.position="none", axis.text.x = element_text(angle = 90, vjust = 0.5) )+
            labs(x=NULL,y="Temperature (°C)\n"),
-         ncol=1, nrow=2, align="v", heights = c(2.2,2.8)),
-       width = 8, height = 5)
+         ncol=1, nrow=2, align="v", heights = c(2.2,2.8))
 
 ## calculate mean Tar pre-intervention vs last week
 t.test(Indoor$Tar[Indoor$day_time < "2022-01-12 UTC"],Indoor$Tar[Indoor$day_time > "2022-02-14 UTC" & Indoor$day_time < "2022-02-18 UTC"], paired=FALSE, method="spearman")#p<0.05 signifficantly different 24.2 & 25.2
@@ -349,7 +336,6 @@ Q2 %>%
   
 
 ### Fig 6 - hourly analysis fan status vs pref e comf - conclusion: non-linear relation, on/off fan cannot be used to predict perception
-ggsave(file="C:/Users/mafo0648/OneDrive - The University of Sydney (Staff)/Documents/campo2022/final/Percept_fan.svg",
        ggarrange(
   Q2%>%
     filter(Prepost==1)%>%
@@ -370,7 +356,7 @@ ggsave(file="C:/Users/mafo0648/OneDrive - The University of Sydney (Staff)/Docum
     ggplot(aes(P_status*100,percent_comf*100))+geom_count()+geom_smooth(col="black")+
     theme_pubclean(base_family = "sans")+scale_radius(range=c(1,7.4))+
     theme( legend.key = element_rect(fill=NA),axis.text = element_text(size=12),text=element_text(size=12),legend.text = element_text(size=12),
-           axis.title = element_text(size=12), axis.title.y = element_blank())+labs( x="Fans on (%)",title="b) Comfortable"),ncol=2, nrow=1,widths = c(2.6,2.4), common.legend = TRUE), width = 8, height=4)
+           axis.title = element_text(size=12), axis.title.y = element_blank())+labs( x="Fans on (%)",title="b) Comfortable"),ncol=2, nrow=1,widths = c(2.6,2.4), common.legend = TRUE)
 
 ## table 4 - analysis 
 cor.test(Q2_daily$conf,Q2_daily$Tmpa_ex,method = "spearman") #p=0.054 rho=0.46
