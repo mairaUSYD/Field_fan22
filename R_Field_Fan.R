@@ -1,11 +1,12 @@
 install.packages(c("svglite","effsize", "extrafont","ggpubr","Metrics"))
 
-library(tidyverse);library(readxl);library(extrafont);library(ggpubr);library(effsize);library(scales);library(Metrics)
+library(pacman)
+p_load(tidyverse,here,extrafont, ggpubr, effsize,scales,Metrics)
 
 
 ########
 ##spreadsheets  Q2
-Q2 <- read_excel("C:/Users/mafo0648/OneDrive - The University of Sydney (Staff)/Documents/campo2022/medicao/Quest2-2022-total.xlsx") #responses questionnaire Q2
+Q2 <- read.csv(here("datasets","Q2.xlsx")) #responses questionnaire Q2
 ##Outdoor conditions - weather station INMET 806
 Out <- read_delim("C:/Users/mafo0648/OneDrive - The University of Sydney (Staff)/Documents/campo2022/medicao/dados_A806_H_2022-01-01_2022-02-19_inmet.csv", 
                   skip = 10, delim = ";")%>%select(`Data Medicao`,`Hora Medicao`,`TEMPERATURA DO AR - BULBO SECO, HORARIA(°C)`,`UMIDADE RELATIVA DO AR, HORARIA(%)`)%>%
