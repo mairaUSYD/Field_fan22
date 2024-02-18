@@ -116,8 +116,8 @@ Indoor%>%
          scale_fill_discrete(labels=c("Morning","Afternoon"), "")+
          scale_y_discrete(expand = c(0,0))+
          xlim(23.5,28)+
-         geom_vline(xintercept = 25.09, lty="dashed", col="black")+
-         annotate("text", x=24.95, y = "26", hjust = -0.2, label="Median", angle=90, size=4.3, family="sans")+
+         geom_vline(xintercept = 25, lty="dashed", col="black")+
+         annotate("text", x=24.9, y = "26", hjust = -0.2, label="Median", angle=90, size=4.3, family="sans")+
          theme_pubclean(base_family = "sans")+
          theme( legend.key = element_rect(colour = NA, fill = NA),text=element_text(size=14),legend.text = element_text(size=12),axis.title = element_text(size=12),
                 legend.position = c(0.8, 0.15),legend.direction = "horizontal")
