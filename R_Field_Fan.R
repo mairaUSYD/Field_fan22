@@ -1,5 +1,3 @@
-install.packages(c("svglite","effsize", "extrafont","ggpubr","Metrics"))
-
 library(pacman)
 p_load(tidyverse,here,extrafont, ggpubr, effsize,scales,Metrics)
 
