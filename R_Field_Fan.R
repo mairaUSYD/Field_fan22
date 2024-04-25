@@ -104,7 +104,7 @@ Indoor%>%
 ### graphs ###
 
   ###  Fig 2 - Temp indoor vs setpoint by period ### 
- Indoor%>%
+       Indoor%>%
          mutate(hour=as.numeric(format(day_time,"%H")),day_factor=format(day_time,"%m/%d"))%>%
          filter(between(hour,8,18), day_factor %in% c(unique(format(Q2$day,"%m/%d"))))%>%
          mutate(period=ifelse(hour<13,"M","T"))%>%
@@ -112,7 +112,7 @@ Indoor%>%
                group_by(day_factor,period)%>%
              summarise(setpoint=mean(setpoint)))%>%
          ggplot( aes(Tar, fill=period,as.factor(setpoint)))+
-         geom_boxplot(varwidth = TRUE,outlier.shape = NA)+labs(x="Air temperature (ºC)", y="Setpoint temperature (ºC)\n")+
+         geom_boxplot(varwidth = TRUE,outlier.shape = NA)+labs(x="Indoor air temperature (ºC)", y="Setpoint temperature (ºC)\n")+
          scale_fill_discrete(labels=c("Morning","Afternoon"), "")+
          scale_y_discrete(expand = c(0,0))+
          xlim(23.5,28)+
