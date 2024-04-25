@@ -7,4 +7,5 @@ The main objective of the intervention was to identify the maximum applicable te
 
 The script presented in R allows the reproduction of the analysis and graphics presented in the publication.
 Please cite us if you use this dataset and codes:
-[![DOI](https://zenodo.org/badge/757815983.svg)](https://zenodo.org/doi/10.5281/zenodo.10674723)
+
+André, M., Schiavon, S., Lamberts, R. Field study data - desk fans and temperature increment applied to open office in Brazil. Zenodo, Feb 2024. [![DOI](https://zenodo.org/badge/757815983.svg)](https://zenodo.org/doi/10.5281/zenodo.10674723)
