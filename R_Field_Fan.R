@@ -26,7 +26,8 @@ Q2<-Q2%>%
 Q2<-Q2%>%
   mutate(Prepost=ifelse(num> 86, 1,0),
          Tar_bin=cut(Tar, breaks=c(22,23,24,25,26,27,28), labels = c("22-23","23-24", "24-25", "25-26", "26-27", "27-28")))%>%
-  mutate(Comf01=ifelse(COMFORT>0,1,0),Pref01=ifelse(PREFERENCE==0,0,1))
+  mutate(Comf01=ifelse(COMFORT>0,1,0),Pref01=ifelse(PREFERENCE==0,0,1),
+         gender_n=ifelse(gender=="Female",0,1))
 
 ## add outdoor conditions
 Q2 <- Q2%>%
@@ -417,3 +418,74 @@ Q2%>%
   filter(Comf01==1 & Prepost==1)%>%
   group_by(FC)%>%
   summarise(mean(Tar))
+
+#personal characteristics
+summary(glm(Pref01~gender_n, data=subset(Q2,Prepost==1), family = binomial(link="probit")))# for PREF gender & BMI sign, age & clo not sign # for Comf nothing sig
+
+ggarrange (   
+  Q2%>%
+    group_by(Prepost,gender)%>%
+    count(PREFERENCE)%>%
+    left_join(
+      Q2%>%
+        group_by(Prepost,gender)%>%
+        count(gender)%>%
+        rename(sum_p=n))%>%
+    mutate(lab=round(n/sum_p*100))%>%
+    ggplot(aes(x=gender, y=lab, fill=as.factor(PREFERENCE)))+
+    geom_bar(stat="identity")+
+    labs(x="", y="Votes (%)", subtitle = "a) Preference votes by gender")+
+    facet_wrap(~Prepost, labeller = as_labeller(c("0"="Pre","1"="Post")))+
+    scale_y_continuous(expand = c(0,2))+
+    geom_text(aes(label=ifelse(PREFERENCE==0,paste("N=",sum_p),NA), y=103))+
+    theme_pubclean(base_family = "sans")+
+    theme(strip.background = element_rect(fill=NA, color = NA), axis.ticks.x = element_blank(), text=element_text(size=14),strip.text.x = element_text(face="bold", size=12),
+          axis.title.y = element_text(size=12), axis.title.x = element_blank(),legend.text = element_text(size=12),axis.text.x = element_blank())+
+    scale_fill_manual(values = c("#FFB2A5","#AAD37B","#3ADAE4"),"",labels = c("Cooler", "No change", "Warmer"))+
+    geom_text(aes(label=ifelse(PREFERENCE==0,lab,NA)), position=position_stack(vjust = 0.5)),
+  Q2%>%
+    filter(PREFERENCE==0)%>%
+    ggplot(aes(Tar, as.factor(Prepost),fill=as.factor(gender)))+geom_boxplot(outlier.shape = NA)+
+    scale_x_continuous(breaks = seq(23,26,1), limits = c(23,26.5))+scale_y_discrete("",limits=c("1","0"),labels=c("Post","Pre"))+
+    theme_pubclean(base_family = "sans")+labs(x="Air temperature (°C)", subtitle = "c) Preferred temperatures by gender", fill="Gender")+#scale_fill_manual("",values = c("#cce5b0ff","#cce5b0ff"),labels=c("Pre","Post"))+
+    theme(legend.key = element_rect(fill="transparent", color = "transparent"), axis.ticks.y = element_blank(), text=element_text(size=14),
+          axis.title = element_text(size=12), legend.text = element_text(size=12),axis.title.x = element_blank(),axis.ticks.x = element_blank(),
+          axis.text.x = element_blank(),panel.grid.major.x = element_line(color = "grey",linetype = 3),panel.grid.major.y = element_blank()),
+  Q2%>%
+    group_by(Prepost,gender)%>%
+    count(COMFORT)%>%
+    left_join(
+      Q2%>%
+        group_by(Prepost,gender)%>%
+        count(gender)%>%
+        rename(sum_p=n))%>%
+    mutate(lab=round(n/sum_p*100))%>%
+    mutate(conf=ifelse(COMFORT==2,"4",ifelse(COMFORT==1,"3",ifelse(COMFORT==-1,"2", "1"))))%>%
+    ggplot(aes(x=gender, y=lab, fill=conf))+
+    geom_bar(stat="identity")+
+    labs(x="Air temperature bin (°C)", y="Votes (%)", subtitle = "b) Comfort votes by gender")+
+    facet_wrap(~Prepost, labeller = as_labeller(c("0"="Pre","1"="Post")))+
+    scale_y_continuous(expand = c(0,2))+#labels = percent_format(suffix = "") se não tiver calculado o percentual 
+    #geom_text(aes(label=ifelse(COMFORT==1,paste("N=",sum_p),NA), y=103))+
+    theme_pubclean(base_family = "sans")+
+    theme(strip.background = element_rect(fill="transparent", color = "transparent"), axis.ticks.x = element_blank(), text=element_text(size=14),strip.text.x = element_blank(),
+          axis.title = element_text(size=12), legend.text = element_text(size=12), legend.position = "bottom")+guides(fill=guide_legend(nrow=2,byrow=TRUE))+
+    scale_fill_manual(values = c("#7CBD47","#AAD37B","#FFA2B3","#FD5F5F"),"",breaks = c("4","3","2","1"),labels = c("Very comfortable", "Just comfortable", "Just uncomfortable", "Very uncomfortable"))+
+    geom_text(aes(label=ifelse(COMFORT %in% c(2,1) ,lab,NA)), position=position_stack(vjust = 0.5)),
+  Q2%>%
+    filter(Comf01==1)%>%
+    ggplot(aes(Tar, as.factor(Prepost),fill=as.factor(gender)))+geom_boxplot(outlier.shape = NA)+
+    scale_x_continuous(breaks = seq(23,26,1), limits = c(23,26.5))+scale_y_discrete("",limits=c("1","0"),labels=c("Post","Pre"))+
+    theme_pubclean(base_family = "sans")+labs(x="Air temperature (°C)", subtitle = "d) Comfortable temperatures by gender")+
+    theme(legend.key = element_rect(fill="transparent", color = "transparent"), axis.ticks.y = element_blank(), text=element_text(size=14),#axis.text.y = element_blank(),
+          axis.title = element_text(size=12), legend.text = element_text(size=12), legend.position = "bottom", axis.ticks.x = element_blank(),
+          panel.grid.major.x = element_line(color = "grey",linetype = 3),panel.grid.major.y = element_blank()),
+  ncol=2, nrow=2, align="hv", heights = c(0.88,1), widths = c(1,0.7))
+
+
+cliff.delta(d=subset(Q2$Pref01,Q2$gender=="M"), f=subset(Q2$Prepost,Q2$gender=="M"))# delta: -0.48 (large) (F=-0.63 large, M=-0.39 medium)
+cliff.delta(d=subset(Q2$Pref01,Q2$age>40), f=subset(Q2$Prepost,Q2$age>40))# age >45 delta: -0.65 (large) 
+t.test(Q2$BMI~ Q2$gender_n,method = "spearman") #23.8 & 29.2
+Q2%>%
+  mutate(gender=ifelse(gender=="F",0,1))%>%
+  cor.test(BMI, gender,method = "spearman")
